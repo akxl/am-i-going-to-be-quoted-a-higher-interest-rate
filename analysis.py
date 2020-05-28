@@ -1,21 +1,25 @@
 # use a generator to filter out dates that I don't want.
 
 from datetime import datetime
+from dateutil.relativedelta import relativedelta
 
 
-def retrieve_rows_within_dates(filename, from_date, to_date):
+def get_weeks(start_date, number_of_weeks):
+	return [start_date + relativedelta(weeks=x) for x in range(number_of_weeks+1)]
+
+def retrieve_rows_within_dates(filename, from_date_exclusive, to_date_inclusive):
 	with open(filename) as f:
 		next(f)  # skip first row, i.e. column names.
 		for line in f:
 			line_as_array = line.split(',')
 			disbursal_date = datetime.strptime(line_as_array[3], "%Y/%m/%d")
-			if disbursal_date >= from_date and disbursal_date <= to_date:
+			if disbursal_date > from_date_exclusive and disbursal_date <= to_date_inclusive:
 				original_loan_amount = line_as_array[4]
 				lending_rate = line_as_array[10]
 				latest_status = line_as_array[11]
 				yield (disbursal_date, float(original_loan_amount), float(lending_rate), latest_status)
 
-def print_metrics_for_loans(loans):
+def metrics_for_loans(loans):
 	a = loans
 	max_date = max((row[0] for row in a))
 	min_date = min((row[0] for row in a))
@@ -26,23 +30,40 @@ def print_metrics_for_loans(loans):
 	total_money_disbursed = sum((row[1] for row in a))
 	print('Total money disbursed: ' + str(total_money_disbursed))
 	sum_of_lending_rate = sum((row[2] for row in a))
-	print('Average lending rate per loan: ' + str(sum_of_lending_rate / number_of_loans))
+	average_lending_rate_per_loan = sum_of_lending_rate / number_of_loans
+	print('Average lending rate per loan: ' + str(average_lending_rate_per_loan))
 	sum_of_product_of_money_disbursed_and_lending_rate = sum((row[1]*row[2] for row in a))
-	print('Average lending rate per unit money: ' + str(sum_of_product_of_money_disbursed_and_lending_rate / total_money_disbursed))
+	average_lending_rate_per_unit_money = sum_of_product_of_money_disbursed_and_lending_rate / total_money_disbursed
+	print('Average lending rate per unit money: ' + str(average_lending_rate_per_unit_money))
+	max_lending_rate = max((row[2] for row in a))
+	print('Max lending rate: ' + str(max_lending_rate))
+	min_lending_rate = min((row[2] for row in a))
+	print('Min lending rate: ' + str(min_lending_rate))
 	print('-----------------------')
+	return (min_date, max_date, number_of_loans, total_money_disbursed, average_lending_rate_per_loan, average_lending_rate_per_unit_money, max_lending_rate, min_lending_rate)
+
+
+#def find_defaults_within_dates
+	# find principal losses
+	# find interest losses
 
 
 if __name__ == '__main__':
-	print_metrics_for_loans(list(retrieve_rows_within_dates(
-				'data_for_loanbook_extract_2020-04-01.csv', 
-				datetime(2020,3,1,0,0), 
-				datetime(2020,3,31,0,0))
-			))
 	
-	print_metrics_for_loans(list(retrieve_rows_within_dates(
-				'data_for_loanbook_extract_2019-10-01.csv', 
-				datetime(2019,9,1,0,0), 
-				datetime(2019,9,30,0,0))
-			))
+	start_date = datetime(2019,3,1,0,0)
+	number_of_weeks = 52
+	weeks = get_weeks(start_date, number_of_weeks)
+	data = (
+		metrics_for_loans(list(retrieve_rows_within_dates(
+			'data_for_loanbook_extract_2020-04-01.csv',
+			weeks[i],
+			weeks[i+1]
+		)))
+		for i in range(number_of_weeks)
+	)
 	
+	
+	for datum in data:
+		print(datum)
+	# TODO: plot BoE rate vs weekly lending rate
 	
