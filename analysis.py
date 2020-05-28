@@ -14,7 +14,7 @@ def retrieve_rows_within_dates(filename, from_date_exclusive, to_date_inclusive)
 		next(f)  # skip first row, i.e. column names.
 		for line in f:
 			line_as_array = line.split(',')
-			disbursal_date = datetime.strptime(line_as_array[3], "%Y/%m/%d")
+			disbursal_date = datetime.strptime(line_as_array[3], "%Y/%m/%d") # e.g.2020/02/29
 			if disbursal_date > from_date_exclusive and disbursal_date <= to_date_inclusive:
 				original_loan_amount = line_as_array[4]
 				lending_rate = line_as_array[10]
@@ -45,6 +45,15 @@ def metrics_for_loans(loans):
 	return (min_date, max_date, number_of_loans, total_money_disbursed, average_lending_rate_per_loan, average_lending_rate_per_unit_money, max_lending_rate, min_lending_rate)
 
 
+def get_boe_interest_rate(filename, from_date_exclusive, to_date_inclusive):
+	with open(filename) as f:
+		next(f)
+		for line in f:
+			line_as_array = line.replace('\"', '').split(',')
+			decision_date = datetime.strptime(line_as_array[0], '%d %b %y') # e.g. 29 Feb 20
+			if decision_date > from_date_exclusive and decision_date <= to_date_inclusive:
+				yield (decision_date, float(line_as_array[1]) / 100.0)
+
 #def find_defaults_within_dates
 	# find principal losses
 	# find interest losses
@@ -55,7 +64,7 @@ if __name__ == '__main__':
 	start_date = datetime(2019,10,1,0,0)
 	number_of_weeks = 26
 	weeks = get_weeks(start_date, number_of_weeks)
-	print(max(weeks))
+	last_date = max(weeks)
 	data = [
 		metrics_for_loans(list(retrieve_rows_within_dates(
 			'data_for_loanbook_extract_2020-04-01.csv',
@@ -68,10 +77,15 @@ if __name__ == '__main__':
 	df = pd.DataFrame(data, columns=['min_date', 'max_date', 'number_of_loans', 'total_money_disbursed', 'average_lending_rate_per_loan', 'average_lending_rate_per_unit_money', 'max_lending_rate', 'min_lending_rate'])
 	df.to_csv('output.csv')
 	
+	
+	boe_data = list(get_boe_interest_rate('boe-rate.csv', start_date, last_date))
+	boe_df = pd.DataFrame(boe_data, columns=['decision_date', 'rate'])
+	
 	week_starts = df['min_date']
 	plt.plot(week_starts, df['min_lending_rate'], 'g--',
 			week_starts, df['average_lending_rate_per_unit_money'], 'bo',
-			week_starts, df['max_lending_rate'], 'r^')
+			week_starts, df['max_lending_rate'], 'r^',
+			boe_df['decision_date'], boe_df['rate'], '-k')
 	plt.show()
 	
 	#for datum in data:
