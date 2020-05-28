@@ -86,6 +86,7 @@ if __name__ == '__main__':
 	boe_df = pd.DataFrame(boe_data, columns=['decision_date', 'rate'])
 	
 	week_starts = df['min_date']
+	plt.figure(0)
 	plt.plot(week_starts, df['min_lending_rate'], 'g--', label='min loan')
 	plt.plot(week_starts, df['median_lending_rate'], 'kx', label='median loan')
 	plt.plot(week_starts, df['average_lending_rate_per_unit_money'], 'bo', label='sterling weighted average')
@@ -96,5 +97,10 @@ if __name__ == '__main__':
 	plt.ylabel('Interest Rate (bps)')
 	plt.show()
 	
+	plt.figure(1)
+	plt.plot(week_starts, df['number_of_loans'], '-k')
+	plt.xlabel('Week starting')
+	plt.ylabel('Number of new loans')
+	plt.show()
 
 	
