@@ -4,6 +4,7 @@ from datetime import datetime
 from dateutil.relativedelta import relativedelta
 import pandas as pd
 import matplotlib.pyplot as plt
+from statistics import median
 
 
 def get_weeks(start_date, number_of_weeks):
@@ -19,7 +20,7 @@ def retrieve_rows_within_dates(filename, from_date_exclusive, to_date_inclusive)
 				original_loan_amount = line_as_array[4]
 				lending_rate = line_as_array[10]
 				latest_status = line_as_array[11]
-				yield (disbursal_date, float(original_loan_amount), float(lending_rate), latest_status)
+				yield (disbursal_date, float(original_loan_amount)*100, float(lending_rate)*10000, latest_status)
 
 def metrics_for_loans(loans):
 	a = loans
@@ -41,10 +42,13 @@ def metrics_for_loans(loans):
 	print('Max lending rate: ' + str(max_lending_rate))
 	min_lending_rate = min((row[2] for row in a))
 	print('Min lending rate: ' + str(min_lending_rate))
+	median_lending_rate = median((row[2] for row in a))
+	print('Median loan lending rate: ' + str(median_lending_rate))
 	print('-----------------------')
-	return (min_date, max_date, number_of_loans, total_money_disbursed, average_lending_rate_per_loan, average_lending_rate_per_unit_money, max_lending_rate, min_lending_rate)
+	return (min_date, max_date, number_of_loans, total_money_disbursed, average_lending_rate_per_loan, average_lending_rate_per_unit_money, max_lending_rate, min_lending_rate, median_lending_rate)
 
 
+# Get your data from https://www.bankofengland.co.uk/boeapps/iadb/Repo.asp
 def get_boe_interest_rate(filename, from_date_exclusive, to_date_inclusive):
 	with open(filename) as f:
 		next(f)
@@ -52,8 +56,9 @@ def get_boe_interest_rate(filename, from_date_exclusive, to_date_inclusive):
 			line_as_array = line.replace('\"', '').split(',')
 			decision_date = datetime.strptime(line_as_array[0], '%d %b %y') # e.g. 29 Feb 20
 			if decision_date > from_date_exclusive and decision_date <= to_date_inclusive:
-				yield (decision_date, float(line_as_array[1]) / 100.0)
+				yield (decision_date, float(line_as_array[1]) * 100.0)
 
+# TODO
 #def find_defaults_within_dates
 	# find principal losses
 	# find interest losses
@@ -61,10 +66,11 @@ def get_boe_interest_rate(filename, from_date_exclusive, to_date_inclusive):
 
 if __name__ == '__main__':
 	
-	start_date = datetime(2019,10,1,0,0)
-	number_of_weeks = 26
+	start_date = datetime(2019,12,31,0,0)
+	number_of_weeks = 13
 	weeks = get_weeks(start_date, number_of_weeks)
 	last_date = max(weeks)
+	print(last_date)
 	data = [
 		metrics_for_loans(list(retrieve_rows_within_dates(
 			'data_for_loanbook_extract_2020-04-01.csv',
@@ -74,7 +80,7 @@ if __name__ == '__main__':
 		for i in range(number_of_weeks)
 	]
 	
-	df = pd.DataFrame(data, columns=['min_date', 'max_date', 'number_of_loans', 'total_money_disbursed', 'average_lending_rate_per_loan', 'average_lending_rate_per_unit_money', 'max_lending_rate', 'min_lending_rate'])
+	df = pd.DataFrame(data, columns=['min_date', 'max_date', 'number_of_loans', 'total_money_disbursed', 'average_lending_rate_per_loan', 'average_lending_rate_per_unit_money', 'max_lending_rate', 'min_lending_rate', 'median_lending_rate'])
 	df.to_csv('output.csv')
 	
 	
@@ -82,13 +88,15 @@ if __name__ == '__main__':
 	boe_df = pd.DataFrame(boe_data, columns=['decision_date', 'rate'])
 	
 	week_starts = df['min_date']
-	plt.plot(week_starts, df['min_lending_rate'], 'g--',
-			week_starts, df['average_lending_rate_per_unit_money'], 'bo',
-			week_starts, df['max_lending_rate'], 'r^',
-			boe_df['decision_date'], boe_df['rate'], '-k')
+	plt.plot(week_starts, df['min_lending_rate'], 'g--', label='min loan')
+	plt.plot(week_starts, df['median_lending_rate'], 'kx', label='median loan')
+	plt.plot(week_starts, df['average_lending_rate_per_unit_money'], 'bo', label='sterling weighted average')
+	plt.plot(week_starts, df['max_lending_rate'], 'r^', label = 'max loan')
+	plt.plot(boe_df['decision_date'], boe_df['rate'], '-k', label = 'BoE Base Rate')
+	plt.legend(loc='upper left')
+	plt.xlabel('Week starting')
+	plt.ylabel('Interest Rate (bps)')
 	plt.show()
 	
-	#for datum in data:
-	#	print(datum)
-	# TODO: plot BoE rate vs weekly lending rate
+
 	

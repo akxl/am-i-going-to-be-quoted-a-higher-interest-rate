@@ -1,1 +1,5 @@
+Loan Book Columns:
 Snapshot Date,Encrypted Loan ID,Encrypted Borrower ID,Disbursal date,Original Loan Amount,Principal Collected,Interest Collected,Total number of payments,Last payment date,Term,Lending rate,Latest Status,Date of Default,PostCode
+
+BoE Base Rate Columns:
+"Date Changed","Rate"
