@@ -2,6 +2,8 @@
 
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
+import pandas as pd
+import matplotlib.pyplot as plt
 
 
 def get_weeks(start_date, number_of_weeks):
@@ -50,20 +52,29 @@ def metrics_for_loans(loans):
 
 if __name__ == '__main__':
 	
-	start_date = datetime(2019,3,1,0,0)
-	number_of_weeks = 52
+	start_date = datetime(2019,10,1,0,0)
+	number_of_weeks = 26
 	weeks = get_weeks(start_date, number_of_weeks)
-	data = (
+	print(max(weeks))
+	data = [
 		metrics_for_loans(list(retrieve_rows_within_dates(
 			'data_for_loanbook_extract_2020-04-01.csv',
 			weeks[i],
 			weeks[i+1]
 		)))
 		for i in range(number_of_weeks)
-	)
+	]
 	
+	df = pd.DataFrame(data, columns=['min_date', 'max_date', 'number_of_loans', 'total_money_disbursed', 'average_lending_rate_per_loan', 'average_lending_rate_per_unit_money', 'max_lending_rate', 'min_lending_rate'])
+	df.to_csv('output.csv')
 	
-	for datum in data:
-		print(datum)
+	week_starts = df['min_date']
+	plt.plot(week_starts, df['min_lending_rate'], 'g--',
+			week_starts, df['average_lending_rate_per_unit_money'], 'bo',
+			week_starts, df['max_lending_rate'], 'r^')
+	plt.show()
+	
+	#for datum in data:
+	#	print(datum)
 	# TODO: plot BoE rate vs weekly lending rate
 	
