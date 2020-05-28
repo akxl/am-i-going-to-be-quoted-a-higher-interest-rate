@@ -1,5 +1,3 @@
-# use a generator to filter out dates that I don't want.
-
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
 import pandas as pd
