@@ -102,5 +102,13 @@ if __name__ == '__main__':
 	plt.xlabel('Week starting')
 	plt.ylabel('Number of new loans')
 	plt.show()
+	
+	plt.figure(2)
+	plt.plot(week_starts, df['median_lending_rate'], 'kx', label='median loan')
+	plt.plot(week_starts, df['average_lending_rate_per_unit_money'], 'bo', label='sterling weighted average')
+	plt.legend(loc='upper left')
+	plt.xlabel('Week starting')
+	plt.ylabel('Interest Rate (bps)')
+	plt.show()
 
 	
